@@ -17,7 +17,7 @@ class MovieModel extends MovieEntity {
     super.runtime,
     super.isFavorite,
     super.isInWatchlist,
-    super.actors
+    required super.actors,
   });
 
   // ───────────────────────────────────────────────────────────
@@ -51,8 +51,9 @@ class MovieModel extends MovieEntity {
       isFavorite: json["isFavorite"] ?? false,
       isInWatchlist: json["isInWatchlist"] ?? false,
 
-      actors: json["actors"] != null ? List<String>.from(json["actors"]) : null,
-    );
+      actors: json["actors"] != null
+          ? List<String>.from(json["actors"])
+          : null,    );
   }
 
   // ───────────────────────────────────────────────────────────
@@ -64,7 +65,7 @@ class MovieModel extends MovieEntity {
       "title": title,
       "overview": overview,
       "poster_path": posterPath,
-      "backback_path": backdropPath,
+      "backdrop_path": backdropPath,
       "vote_average": voteAverage,
       "vote_count": voteCount,
       "popularity": popularity,

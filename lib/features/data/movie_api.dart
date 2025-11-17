@@ -8,61 +8,61 @@ class MovieApi {
   MovieApi(this.api);
 
   // ───────────────────────────────────────────────
-  // getRecentMovies
-  // Fetches "now playing" movies from TMDb
-  // returns: List<MovieModel>
+  // getRecentMovies → أفضل نسخة
   // ───────────────────────────────────────────────
   Future<List<MovieModel>> getRecentMovies() async {
-    // 1) Fetch list of movies
+    // 1) Fetch base list (from /now_playing)
     final response = await api.get(AppConstants.recentMovies);
     final List<dynamic> results = response["results"];
 
-    // 2) Convert to MovieModel
-    List<MovieModel> movies =
-    results.map((json) => MovieModel.fromJson(json)).toList();
+    List<MovieModel> movies = [];
 
-    // 3) Fetch actors for each movie
-    for (int i = 0; i < movies.length; i++) {
-      final movieId = movies[i].id;
+    // 2) Loop through each movie
+    for (final json in results) {
+      final movieId = json["id"];
 
+      // Fetch movie details (runtime + genres)
+      Map<String, dynamic> details = {};
       try {
-        final actors = await getMovieActors(movieId);
-
-        movies[i] = MovieModel(
-          id: movies[i].id,
-          title: movies[i].title,
-          overview: movies[i].overview,
-          posterPath: movies[i].posterPath,
-          backdropPath: movies[i].backdropPath,
-          voteAverage: movies[i].voteAverage,
-          voteCount: movies[i].voteCount,
-          popularity: movies[i].popularity,
-          releaseDate: movies[i].releaseDate,
-          originalLanguage: movies[i].originalLanguage,
-          genreIds: movies[i].genreIds,
-          genres: movies[i].genres,
-          runtime: movies[i].runtime,
-          actors: actors,                // ← هنا نضيف الممثلين
-          isFavorite: movies[i].isFavorite,
-          isInWatchlist: movies[i].isInWatchlist,
-        );
+        details = await api.get("/movie/$movieId");
       } catch (_) {
-        // ignore errors if credits not available
+        // ignore if details not available
       }
+
+      // Fetch movie actors (credits)
+      Map<String, dynamic> credits = {};
+      try {
+        credits = await api.get("/movie/$movieId/credits");
+      } catch (_) {
+        // ignore if credits unavailable
+      }
+
+      // ───────────────────────────────
+      // Extract genres (names)
+      // ───────────────────────────────
+      if (details["genres"] != null) {
+        json["genres"] = (details["genres"] as List)
+            .map((g) => g["name"].toString())
+            .toList();
+      }
+
+      // runtime
+      json["runtime"] = details["runtime"];
+
+      // ───────────────────────────────
+      // Extract actors
+      // ───────────────────────────────
+      if (credits["cast"] != null) {
+        final cast = credits["cast"] as List;
+        json["actors"] = cast
+            .map((actor) => actor["name"].toString())
+            .toList();
+      }
+
+      // 3) Convert merged JSON → MovieModel
+      movies.add(MovieModel.fromJson(json));
     }
 
     return movies;
   }
-
-
-  Future<List<String>> getMovieActors(int movieId) async {
-    final response = await api.get("/movie/$movieId/credits");
-
-    final cast = response["cast"] as List;
-    final actors = cast.map((actor) => actor["name"].toString()).toList();
-
-    return actors;
-  }
-
-
 }

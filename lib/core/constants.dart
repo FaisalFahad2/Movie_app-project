@@ -18,6 +18,8 @@ class AppConstants {
   static const String recentMovies = "/movie/now_playing";
   static const String topRatedMovies = "/movie/top_rated";
   static const String movieDetails = "/movie"; // + /{movie_id}
+  static String movieCredits(int id) => "/movie/$id/credits";
+
 
   // ──────────────────────────────────────────────
   // OTHER CONSTANTS
