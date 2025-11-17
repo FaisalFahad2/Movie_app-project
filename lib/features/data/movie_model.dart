@@ -17,6 +17,7 @@ class MovieModel extends MovieEntity {
     super.runtime,
     super.isFavorite,
     super.isInWatchlist,
+    super.actors
   });
 
   // ───────────────────────────────────────────────────────────
@@ -49,6 +50,8 @@ class MovieModel extends MovieEntity {
       // local flags → default false
       isFavorite: json["isFavorite"] ?? false,
       isInWatchlist: json["isInWatchlist"] ?? false,
+
+      actors: json["actors"] != null ? List<String>.from(json["actors"]) : null,
     );
   }
 
@@ -72,6 +75,7 @@ class MovieModel extends MovieEntity {
       "runtime": runtime,
       "isFavorite": isFavorite,
       "isInWatchlist": isInWatchlist,
+      "actors": actors
     };
   }
 }
