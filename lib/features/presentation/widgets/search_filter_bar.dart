@@ -58,7 +58,7 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
         // 🎭 Genre Dropdown
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: DropdownButtonFormField<int>(
+          child: DropdownButtonFormField<int?>(
             dropdownColor: const Color(0xFF161B22),
             decoration: InputDecoration(
               filled: true,
@@ -73,19 +73,29 @@ class _SearchAndFilterBarState extends State<SearchAndFilterBar> {
               "Filter by Genre",
               style: TextStyle(color: Colors.white54),
             ),
-            items: genresMap.entries.map((e) {
-              return DropdownMenuItem<int>(
-                value: e.key,
-                child: Text(
-                  e.value,
-                  style: const TextStyle(color: Colors.white),
-                ),
-              );
-            }).toList(),
+
+            items: [
+              const DropdownMenuItem<int?>(
+                value: null,
+                child: Text("All Genres", style: TextStyle(color: Colors.white)),
+              ),
+              ...genresMap.entries.map((e) {
+                return DropdownMenuItem<int?>(
+                  value: e.key,
+                  child: Text(
+                    e.value,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }),
+            ],
+
             onChanged: (value) {
               setState(() {
                 _selectedGenre = value;
               });
+
+              // 💥 هنا تنفيذ خيار ALL
               widget.onGenreSelected?.call(value);
             },
           ),

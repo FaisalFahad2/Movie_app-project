@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'recent_movies_page.dart';
-import 'top_rated_page.dart';
-import 'watchlist_page.dart';
-import 'favorites_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({Key? key}) : super(key: key);
@@ -15,12 +12,13 @@ class MainNavigationPage extends StatefulWidget {
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
 
-  // Screens in order
-  final List<Widget> _screens = const [
+  final List<Widget> _screens = [
     RecentMoviesPage(),
-    //TopRatedPage(),
-    //WatchlistPage(),
-    //FavoritesPage(),
+
+    // Temporary placeholder pages
+    Center(child: Text("Top Rated Page", style: TextStyle(color: Colors.white))),
+    Center(child: Text("Watchlist Page", style: TextStyle(color: Colors.white))),
+    Center(child: Text("Favorites Page", style: TextStyle(color: Colors.white))),
   ];
 
   @override
@@ -39,29 +37,16 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         },
 
         backgroundColor: const Color(0xFF161B22),
-        selectedItemColor: const Color(0xFF1F6FEB), // Blue
+        selectedItemColor: const Color(0xFF1F6FEB),
         unselectedItemColor: Colors.grey,
-
         type: BottomNavigationBarType.fixed,
         elevation: 8,
 
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.movie),
-            label: "Recent",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.star),
-            label: "Top Rated",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.visibility),
-            label: "Watchlist",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: "Favorites",
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.movie), label: "Recent"),
+          BottomNavigationBarItem(icon: Icon(Icons.star), label: "Top Rated"),
+          BottomNavigationBarItem(icon: Icon(Icons.visibility), label: "Watchlist"),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: "Favorites"),
         ],
       ),
     );

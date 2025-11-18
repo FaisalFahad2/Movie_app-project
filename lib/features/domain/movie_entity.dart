@@ -21,7 +21,7 @@ class MovieEntity {
   final bool isFavorite;           // Local flags
   final bool isInWatchlist;
 
-  final List<String>? actors;
+  List<String>? actors;
 
   MovieEntity({
     required this.id,
@@ -40,6 +40,6 @@ class MovieEntity {
     this.isFavorite = false,
     this.isInWatchlist = false,
 
-    required this.actors
+    this.actors
   });
 }

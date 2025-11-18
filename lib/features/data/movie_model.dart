@@ -17,7 +17,7 @@ class MovieModel extends MovieEntity {
     super.runtime,
     super.isFavorite,
     super.isInWatchlist,
-    required super.actors,
+    super.actors,
   });
 
   // ───────────────────────────────────────────────────────────

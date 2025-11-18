@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/api_client.dart';
 import '../../data/movie_api.dart';
-import '../../domain/movie_entity.dart';
+import '../../data/movie_model.dart';
+import '../utils/movie_search.dart';
 import '../widgets/movie_list.dart';
 import '../widgets/search_filter_bar.dart';
 
@@ -13,72 +14,87 @@ class RecentMoviesPage extends StatefulWidget {
 }
 
 class _RecentMoviesPageState extends State<RecentMoviesPage> {
-  late Future<List<MovieEntity>> _futureMovies;
+  late Future<List<MovieModel>> _futureMovies;
 
-  // Original movies (20 movies)
-  List<MovieEntity> allMovies = [];
+  List<MovieModel> allMovies = [];
+  List<MovieModel> filteredMovies = [];
 
-  // Filtered movies (after search/filters)
-  List<MovieEntity> filteredMovies = [];
+  // ───────── Save Last Filters ─────────
+  String _currentSearch = "";
+  int? _currentGenre;
+  double _currentRating = 0;
 
   @override
   void initState() {
     super.initState();
+
     final movieApi = MovieApi(ApiClient());
 
     _futureMovies = movieApi.getRecentMovies().then((movies) {
       allMovies = movies;
       filteredMovies = movies;
+
+      _loadActorsInBackground(movieApi, movies);
+
       return movies;
     });
   }
 
   // ─────────────────────────────────────────────
-  // 🔎 Search Function
+  // Load actors in background (no UI freeze)
+  // ─────────────────────────────────────────────
+  Future<void> _loadActorsInBackground(MovieApi api, List<MovieModel> movies) async {
+    for (final movie in movies) {
+      final actors = await api.getMovieActors(movie.id);
+      movie.actors = actors;
+    }
+    if (mounted) setState(() {});
+  }
+
+  // ─────────────────────────────────────────────
+  // Unified filter logic (search + genre + rating)
+  // ─────────────────────────────────────────────
+  void _applyFilters() {
+    List<MovieModel> result = allMovies;
+
+    // 1) genre filter
+    if (_currentGenre != null) {
+      result = MovieSearch.filterByGenre(result, _currentGenre);
+    }
+
+    // 2) rating filter
+    result = MovieSearch.filterByRating(result, _currentRating);
+
+    // 3) search
+    result = MovieSearch.search(result, _currentSearch);
+
+    setState(() {
+      filteredMovies = result;
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // Search
   // ─────────────────────────────────────────────
   void _searchMovies(String query) {
-    setState(() {
-      final lower = query.toLowerCase();
-
-      filteredMovies = allMovies.where((movie) {
-        final title = movie.title.toLowerCase();
-        final overview = movie.overview.toLowerCase();
-        final language = movie.originalLanguage.toLowerCase();
-        final genres = movie.genres?.join(" ").toLowerCase() ?? "";
-        final actorsString = movie.actors?.join(" ").toLowerCase() ?? "";
-
-        return title.contains(lower) ||
-            overview.contains(lower) ||
-            language.contains(lower) ||
-            genres.contains(lower) ||
-            actorsString.contains(lower);
-      }).toList();
-    });
+    _currentSearch = query;
+    _applyFilters();
   }
 
   // ─────────────────────────────────────────────
-  // 🎭 Filter by Genre
+  // Filter by Genre
   // ─────────────────────────────────────────────
   void _filterByGenre(int? genreId) {
-    setState(() {
-      if (genreId == null) {
-        filteredMovies = allMovies;
-        return;
-      }
-
-      filteredMovies =
-          allMovies.where((movie) => movie.genreIds.contains(genreId)).toList();
-    });
+    _currentGenre = genreId;
+    _applyFilters();
   }
 
   // ─────────────────────────────────────────────
-  // ⭐ Filter by Rating
+  // Filter by Rating
   // ─────────────────────────────────────────────
-  void _filterByRating(double minRating) {
-    setState(() {
-      filteredMovies =
-          allMovies.where((movie) => movie.voteAverage >= minRating).toList();
-    });
+  void _filterByRating(double rating) {
+    _currentRating = rating;
+    _applyFilters();
   }
 
   @override
@@ -91,37 +107,32 @@ class _RecentMoviesPageState extends State<RecentMoviesPage> {
         elevation: 0,
       ),
 
-      body: FutureBuilder<List<MovieEntity>>(
+      body: FutureBuilder<List<MovieModel>>(
         future: _futureMovies,
         builder: (context, snapshot) {
-          // 🟡 Loading
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(color: Colors.blueAccent),
             );
           }
 
-          // 🔴 Error
           if (snapshot.hasError) {
             return Center(
               child: Text(
                 "Error: ${snapshot.error}",
-                style: const TextStyle(color: Colors.red, fontSize: 16),
+                style: const TextStyle(color: Colors.red),
               ),
             );
           }
 
-          // 🟢 DATA IS READY
           return Column(
             children: [
-              // ───────── Search + Filters Widget ─────────
               SearchAndFilterBar(
                 onSearchChanged: _searchMovies,
                 onGenreSelected: _filterByGenre,
                 onRatingChanged: _filterByRating,
               ),
 
-              // ───────── Movies List ─────────
               Expanded(
                 child: MovieList(movies: filteredMovies),
               ),
