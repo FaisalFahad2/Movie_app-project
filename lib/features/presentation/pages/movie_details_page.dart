@@ -27,12 +27,16 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
   double _displayedAverage = 0.0;
   int _displayedCount = 0;
 
+  bool _isFavorite = false;
+  bool _inWatchlist = false;
+
   @override
   void initState() {
     super.initState();
     final api = MovieApi(ApiClient());
     _movieFuture = api.getMovieDetails(widget.movieId).then((movie) async {
       await _loadUserRating(movie);
+      await _loadWatchlistAndFavoriteStatus();
       return movie;
     });
     _actorsFuture = api.getMovieActors(widget.movieId);
@@ -60,6 +64,30 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
         });
       }
     }
+  }
+
+  Future<void> _loadWatchlistAndFavoriteStatus() async {
+    _isFavorite = await _storage.exists(LocalStorage.favoritesKey, widget.movieId);
+    _inWatchlist = await _storage.exists(LocalStorage.watchlistKey, widget.movieId);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _toggleFavorite(MovieModel movie) async {
+    if (_isFavorite) {
+      await _storage.removeFromList(LocalStorage.favoritesKey, widget.movieId);
+    } else {
+      await _storage.saveToList(LocalStorage.favoritesKey, movie.toJson());
+    }
+    await _loadWatchlistAndFavoriteStatus();
+  }
+
+  Future<void> _toggleWatchlist(MovieModel movie) async {
+    if (_inWatchlist) {
+      await _storage.removeFromList(LocalStorage.watchlistKey, widget.movieId);
+    } else {
+      await _storage.saveToList(LocalStorage.watchlistKey, movie.toJson());
+    }
+    await _loadWatchlistAndFavoriteStatus();
   }
 
   Future<void> _handleRating(double rating, MovieModel movie) async {
@@ -341,6 +369,53 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                       UserRatingWidget(
                         currentUserRating: _userRating,
                         onRate: (rating) => _handleRating(rating, movie),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Watchlist and Favorites Section
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _toggleWatchlist(movie),
+                          icon: Icon(
+                            _inWatchlist ? Icons.check : Icons.bookmark_add_outlined,
+                          ),
+                          label: Text(
+                            _inWatchlist ? "In Watchlist" : "Add to Watchlist",
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1F6FEB),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _toggleFavorite(movie),
+                          icon: Icon(
+                            _isFavorite ? Icons.favorite : Icons.favorite_border,
+                            color: _isFavorite ? Colors.red : Colors.white,
+                          ),
+                          label: Text(
+                            _isFavorite ? "Favorite" : "Add to Favorites",
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: const BorderSide(color: Color(0xFF1F6FEB)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
                       ),
 
                       const SizedBox(height: 24),

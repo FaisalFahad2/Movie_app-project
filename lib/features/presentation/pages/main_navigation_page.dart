@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'recent_movies_page.dart';
+import 'watchlist_page.dart';
+import 'favorites_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({Key? key}) : super(key: key);
@@ -13,12 +15,10 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = [
-    RecentMoviesPage(),
-
-    // Temporary placeholder pages
-    Center(child: Text("Top Rated Page", style: TextStyle(color: Colors.white))),
-    Center(child: Text("Watchlist Page", style: TextStyle(color: Colors.white))),
-    Center(child: Text("Favorites Page", style: TextStyle(color: Colors.white))),
+    const RecentMoviesPage(),
+    const Center(child: Text("Top Rated Page", style: TextStyle(color: Colors.white))),
+    const WatchlistPage(),
+    const FavoritesPage(),
   ];
 
   @override
@@ -45,8 +45,14 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.movie), label: "Recent"),
           BottomNavigationBarItem(icon: Icon(Icons.star), label: "Top Rated"),
-          BottomNavigationBarItem(icon: Icon(Icons.visibility), label: "Watchlist"),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: "Favorites"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.visibility),
+            label: "Watchlist",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: "Favorites",
+          ),
         ],
       ),
     );
