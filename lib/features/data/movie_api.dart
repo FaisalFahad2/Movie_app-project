@@ -24,4 +24,10 @@ class MovieApi {
     final cast = response["cast"] as List;
     return cast.map((actor) => actor["name"].toString()).toList();
   }
+
+  // يجلب تفاصيل فيلم واحد
+  Future<MovieModel> getMovieDetails(int movieId) async {
+    final response = await api.get("${AppConstants.movieDetails}/$movieId");
+    return MovieModel.fromJson(response);
+  }
 }

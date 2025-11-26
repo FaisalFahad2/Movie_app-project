@@ -6,8 +6,8 @@ class MovieEntity {
   final String posterPath;
   final String backdropPath;
 
-  final double voteAverage;
-  final int voteCount;
+  double voteAverage;
+  int voteCount;
   final double popularity;
 
   final String releaseDate;
@@ -42,4 +42,12 @@ class MovieEntity {
 
     this.actors
   });
+
+  // Update rating with user's rating
+  void updateWithUserRating(double userRating) {
+    double totalRating = voteAverage * voteCount;
+    double newAverage = (totalRating + userRating) / (voteCount + 1);
+    voteAverage = double.parse(newAverage.toStringAsFixed(1));
+    voteCount = voteCount + 1;
+  }
 }

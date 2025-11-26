@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/api_client.dart';
+import '../../../core/local_storage.dart';
 import '../../data/movie_api.dart';
 import '../../data/movie_model.dart';
 import '../utils/movie_search.dart';
@@ -30,14 +31,52 @@ class _RecentMoviesPageState extends State<RecentMoviesPage> {
 
     final movieApi = MovieApi(ApiClient());
 
-    _futureMovies = movieApi.getRecentMovies().then((movies) {
+    _futureMovies = movieApi.getRecentMovies().then((movies) async {
       allMovies = movies;
       filteredMovies = movies;
+
+      // Apply user ratings to movies
+      await _applyUserRatings(movies);
 
       _loadActorsInBackground(movieApi, movies);
 
       return movies;
     });
+  }
+
+  // ─────────────────────────────────────────────
+  // Apply user ratings to movies
+  // ─────────────────────────────────────────────
+  Future<void> _applyUserRatings(List<MovieModel> movies) async {
+    final storage = LocalStorage();
+    for (final movie in movies) {
+      final userRating = await storage.getUserRating(movie.id);
+      if (userRating != null) {
+        movie.updateWithUserRating(userRating);
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // Refresh ratings when returning from details
+  // We need to reload from API to get fresh data
+  // ─────────────────────────────────────────────
+  Future<void> _refreshRatings() async {
+    final movieApi = MovieApi(ApiClient());
+
+    try {
+      final freshMovies = await movieApi.getRecentMovies();
+      allMovies = freshMovies;
+
+      // Apply user ratings to fresh data
+      await _applyUserRatings(allMovies);
+
+      // Re-apply current filters
+      _applyFilters();
+    } catch (e) {
+      // If refresh fails, just continue with current data
+      if (mounted) setState(() {});
+    }
   }
 
   // ─────────────────────────────────────────────
@@ -134,7 +173,10 @@ class _RecentMoviesPageState extends State<RecentMoviesPage> {
               ),
 
               Expanded(
-                child: MovieList(movies: filteredMovies),
+                child: MovieList(
+                  movies: filteredMovies,
+                  onMovieDetailsClosed: _refreshRatings,
+                ),
               ),
             ],
           );

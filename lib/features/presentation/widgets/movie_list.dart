@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../domain/movie_entity.dart';
+import '../pages/movie_details_page.dart';
 import 'movie_card.dart';
 
 class MovieList extends StatelessWidget {
   final List<MovieEntity> movies;
+  final VoidCallback? onMovieDetailsClosed;
 
   const MovieList({
     Key? key,
     required this.movies,
+    this.onMovieDetailsClosed,
   }) : super(key: key);
 
   @override
@@ -28,9 +31,15 @@ class MovieList extends StatelessWidget {
         final movie = movies[index];
         return MovieCard(
           movie: movie,
-          onTap: () {
-            // يمكنك لاحقًا فتح صفحة التفاصيل هنا
-            print("Tapped: ${movie.title}");
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MovieDetailsPage(movieId: movie.id),
+              ),
+            );
+            // Call callback to refresh parent
+            onMovieDetailsClosed?.call();
           },
         );
       },
