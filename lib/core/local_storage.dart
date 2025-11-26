@@ -12,15 +12,53 @@ class LocalStorage {
   // movie = Map converted to JSON string
   // ───────────────────────────────────────────────
   Future<void> saveToList(String key, Map<String, dynamic> movie) async {
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    // Get current list
-    List<String> movies = prefs.getStringList(key) ?? [];
+      // Ensure all numeric fields are correct types
+      final sanitizedMovie = {
+        "id": movie["id"] is int ? movie["id"] : int.parse(movie["id"].toString()),
+        "title": movie["title"]?.toString() ?? "",
+        "overview": movie["overview"]?.toString() ?? "",
+        "poster_path": movie["poster_path"]?.toString() ?? "",
+        "backdrop_path": movie["backdrop_path"]?.toString() ?? "",
+        "vote_average": movie["vote_average"] is double
+            ? movie["vote_average"]
+            : double.parse(movie["vote_average"].toString()),
+        "vote_count": movie["vote_count"] is int
+            ? movie["vote_count"]
+            : int.parse(movie["vote_count"].toString()),
+        "popularity": movie["popularity"] is double
+            ? movie["popularity"]
+            : double.parse(movie["popularity"].toString()),
+        "release_date": movie["release_date"]?.toString() ?? "",
+        "original_language": movie["original_language"]?.toString() ?? "",
+        "genre_ids": (movie["genre_ids"] as List?)
+                ?.map((e) => e is int ? e : int.parse(e.toString()))
+                .toList() ??
+            [],
+      };
 
-    // Add new movie as JSON string
-    movies.add(jsonEncode(movie));
+      // Get current list
+      List<String> movies = prefs.getStringList(key) ?? [];
 
-    await prefs.setStringList(key, movies);
+      // Check if movie already exists (prevent duplicates)
+      final movieId = sanitizedMovie["id"];
+      bool alreadyExists = movies.any((item) {
+        final decoded = jsonDecode(item);
+        return decoded["id"] == movieId;
+      });
+
+      // Only add if it doesn't exist
+      if (!alreadyExists) {
+        movies.add(jsonEncode(sanitizedMovie));
+        await prefs.setStringList(key, movies);
+      }
+    } catch (e) {
+      print('Error saving movie to $key: $e');
+      print('Movie data: $movie');
+      rethrow;
+    }
   }
 
   // ───────────────────────────────────────────────

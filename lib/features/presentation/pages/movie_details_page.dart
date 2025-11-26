@@ -9,10 +9,7 @@ import '../widgets/user_rating_widget.dart';
 class MovieDetailsPage extends StatefulWidget {
   final int movieId;
 
-  const MovieDetailsPage({
-    super.key,
-    required this.movieId,
-  });
+  const MovieDetailsPage({super.key, required this.movieId});
 
   @override
   State<MovieDetailsPage> createState() => _MovieDetailsPageState();
@@ -27,19 +24,108 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
   double _displayedAverage = 0.0;
   int _displayedCount = 0;
 
-  bool _isFavorite = false;
-  bool _inWatchlist = false;
+  bool isInWatchlist = false;
+  bool isFavorite = false;
 
   @override
   void initState() {
     super.initState();
     final api = MovieApi(ApiClient());
+
     _movieFuture = api.getMovieDetails(widget.movieId).then((movie) async {
       await _loadUserRating(movie);
-      await _loadWatchlistAndFavoriteStatus();
       return movie;
     });
+
     _actorsFuture = api.getMovieActors(widget.movieId);
+
+    checkLists(); // ← تحميل حالة watchlist/favorite عند فتح الصفحة
+  }
+
+  Future<void> checkLists() async {
+    isInWatchlist = await _storage.exists(
+      LocalStorage.watchlistKey,
+      widget.movieId,
+    );
+
+    isFavorite = await _storage.exists(
+      LocalStorage.favoritesKey,
+      widget.movieId,
+    );
+
+    if (mounted) setState(() {});
+  }
+
+  Future<void> toggleWatchlist(MovieModel movie) async {
+    try {
+      if (isInWatchlist) {
+        await _storage.removeFromList(LocalStorage.watchlistKey, movie.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Removed from watchlist'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      } else {
+        await _storage.saveToList(LocalStorage.watchlistKey, movie.toJson());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Added to watchlist'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+      await checkLists();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> toggleFavorite(MovieModel movie) async {
+    try {
+      if (isFavorite) {
+        await _storage.removeFromList(LocalStorage.favoritesKey, movie.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Removed from favorites'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      } else {
+        await _storage.saveToList(LocalStorage.favoritesKey, movie.toJson());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Added to favorites'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+      await checkLists();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadUserRating(MovieModel movie) async {
@@ -50,6 +136,7 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
         movie.voteAverage,
         movie.voteCount,
       );
+
       if (mounted) {
         setState(() {
           _userRating = rating;
@@ -57,37 +144,7 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
           _displayedCount = adjusted['count'];
         });
       }
-    } else {
-      if (mounted) {
-        setState(() {
-          _userRating = null;
-        });
-      }
     }
-  }
-
-  Future<void> _loadWatchlistAndFavoriteStatus() async {
-    _isFavorite = await _storage.exists(LocalStorage.favoritesKey, widget.movieId);
-    _inWatchlist = await _storage.exists(LocalStorage.watchlistKey, widget.movieId);
-    if (mounted) setState(() {});
-  }
-
-  Future<void> _toggleFavorite(MovieModel movie) async {
-    if (_isFavorite) {
-      await _storage.removeFromList(LocalStorage.favoritesKey, widget.movieId);
-    } else {
-      await _storage.saveToList(LocalStorage.favoritesKey, movie.toJson());
-    }
-    await _loadWatchlistAndFavoriteStatus();
-  }
-
-  Future<void> _toggleWatchlist(MovieModel movie) async {
-    if (_inWatchlist) {
-      await _storage.removeFromList(LocalStorage.watchlistKey, widget.movieId);
-    } else {
-      await _storage.saveToList(LocalStorage.watchlistKey, movie.toJson());
-    }
-    await _loadWatchlistAndFavoriteStatus();
   }
 
   Future<void> _handleRating(double rating, MovieModel movie) async {
@@ -152,10 +209,10 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
 
           final movie = snapshot.data!;
 
-          // Use adjusted rating if user has rated, otherwise use original
           final displayAverage = _displayedAverage > 0
               ? _displayedAverage
               : movie.voteAverage;
+
           final displayCount = _displayedCount > 0
               ? _displayedCount
               : movie.voteCount;
@@ -164,7 +221,6 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Backdrop Image
                 Image.network(
                   "${AppConstants.imageBaseUrl}${movie.backdropPath}",
                   width: double.infinity,
@@ -177,7 +233,6 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title
                       Text(
                         movie.title,
                         style: const TextStyle(
@@ -187,9 +242,36 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                         ),
                       ),
 
+                      const SizedBox(height: 12),
+
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              isInWatchlist
+                                  ? Icons.bookmark
+                                  : Icons.bookmark_border,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                            onPressed: () => toggleWatchlist(movie),
+                          ),
+                          const SizedBox(width: 12),
+                          IconButton(
+                            icon: Icon(
+                              isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              color: Colors.red,
+                              size: 28,
+                            ),
+                            onPressed: () => toggleFavorite(movie),
+                          ),
+                        ],
+                      ),
+
                       const SizedBox(height: 8),
 
-                      // Release Date & Rating
                       Row(
                         children: [
                           Text(
@@ -215,210 +297,29 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                           const SizedBox(width: 4),
                           Text(
                             "($displayCount votes)",
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14,
-                            ),
+                            style: const TextStyle(color: Colors.grey),
                           ),
                         ],
                       ),
 
-                      const SizedBox(height: 16),
-
-                      // Runtime & Language
-                      Row(
-                        children: [
-                          if (movie.runtime != null) ...[
-                            const Icon(Icons.access_time,
-                                color: Colors.grey, size: 18),
-                            const SizedBox(width: 4),
-                            Text(
-                              "${movie.runtime} min",
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                          ],
-                          const Icon(Icons.language,
-                              color: Colors.grey, size: 18),
-                          const SizedBox(width: 4),
-                          Text(
-                            movie.originalLanguage.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Genres
-                      if (movie.genres != null && movie.genres!.isNotEmpty)
-                        Wrap(
-                          spacing: 8,
-                          children: movie.genres!
-                              .map((genre) => Chip(
-                                    label: Text(genre),
-                                    backgroundColor: const Color(0xFF1F6FEB),
-                                    labelStyle:
-                                        const TextStyle(color: Colors.white),
-                                  ))
-                              .toList(),
-                        ),
-
-                      const SizedBox(height: 24),
-
-                      // Overview Section
-                      const Text(
-                        "Overview",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      Text(
-                        movie.overview,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
-                          height: 1.5,
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Cast Section
-                      const Text(
-                        "Cast",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      FutureBuilder<List<String>>(
-                        future: _actorsFuture,
-                        builder: (context, actorSnapshot) {
-                          if (actorSnapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const CircularProgressIndicator();
-                          }
-
-                          if (actorSnapshot.hasError ||
-                              !actorSnapshot.hasData ||
-                              actorSnapshot.data!.isEmpty) {
-                            return const Text(
-                              "No cast information available",
-                              style: TextStyle(color: Colors.grey),
-                            );
-                          }
-
-                          final actors = actorSnapshot.data!;
-                          return Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: actors
-                                .take(10)
-                                .map((actor) => Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF161B22),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        actor,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ))
-                                .toList(),
-                          );
-                        },
-                      ),
-
-                      const SizedBox(height: 40),
-
-                      // User Rating Section
-                      const Text(
-                        "Rate This Movie",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 20),
 
                       UserRatingWidget(
                         currentUserRating: _userRating,
                         onRate: (rating) => _handleRating(rating, movie),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 20),
 
-                      // Watchlist and Favorites Section
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _toggleWatchlist(movie),
-                          icon: Icon(
-                            _inWatchlist ? Icons.check : Icons.bookmark_add_outlined,
-                          ),
-                          label: Text(
-                            _inWatchlist ? "In Watchlist" : "Add to Watchlist",
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1F6FEB),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
+                      Text(
+                        movie.overview,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
                         ),
                       ),
 
-                      const SizedBox(height: 12),
-
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => _toggleFavorite(movie),
-                          icon: Icon(
-                            _isFavorite ? Icons.favorite : Icons.favorite_border,
-                            color: _isFavorite ? Colors.red : Colors.white,
-                          ),
-                          label: Text(
-                            _isFavorite ? "Favorite" : "Add to Favorites",
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            side: const BorderSide(color: Color(0xFF1F6FEB)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),

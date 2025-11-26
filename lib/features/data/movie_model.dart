@@ -25,17 +25,26 @@ class MovieModel extends MovieEntity {
   // ───────────────────────────────────────────────────────────
   factory MovieModel.fromJson(Map<String, dynamic> json) {
     return MovieModel(
-      id: json["id"] ?? 0,
-      title: json["title"] ?? "",
-      overview: json["overview"] ?? "",
-      posterPath: json["poster_path"] ?? "",
-      backdropPath: json["backdrop_path"] ?? "",
-      voteAverage: (json["vote_average"] ?? 0).toDouble(),
-      voteCount: (json["vote_count"] ?? 0),
-      popularity: (json["popularity"] ?? 0).toDouble(),
-      releaseDate: json["release_date"] ?? "",
-      originalLanguage: json["original_language"] ?? "",
-      genreIds: List<int>.from(json["genre_ids"] ?? []),
+      id: json["id"] is int ? json["id"] : int.parse(json["id"].toString()),
+      title: json["title"]?.toString() ?? "",
+      overview: json["overview"]?.toString() ?? "",
+      posterPath: json["poster_path"]?.toString() ?? "",
+      backdropPath: json["backdrop_path"]?.toString() ?? "",
+      voteAverage: json["vote_average"] is double
+          ? json["vote_average"]
+          : (json["vote_average"] ?? 0).toDouble(),
+      voteCount: json["vote_count"] is int
+          ? json["vote_count"]
+          : int.parse((json["vote_count"] ?? 0).toString()),
+      popularity: json["popularity"] is double
+          ? json["popularity"]
+          : (json["popularity"] ?? 0).toDouble(),
+      releaseDate: json["release_date"]?.toString() ?? "",
+      originalLanguage: json["original_language"]?.toString() ?? "",
+      genreIds: (json["genre_ids"] as List?)
+              ?.map((e) => e is int ? e : int.parse(e.toString()))
+              .toList() ??
+          [],
 
       // optional fields (from /movie/{id} endpoint)
       runtime: json["runtime"],
@@ -43,8 +52,14 @@ class MovieModel extends MovieEntity {
       // convert genres objects (if available)
       genres: json["genres"] != null
           ? (json["genres"] as List)
-          .map((g) => g["name"].toString())
-          .toList()
+              .map((g) {
+                if (g is Map<String, dynamic>) {
+                  return g["name"]?.toString() ?? "";
+                } else {
+                  return g.toString();
+                }
+              })
+              .toList()
           : null,
 
       // local flags → default false
@@ -53,7 +68,8 @@ class MovieModel extends MovieEntity {
 
       actors: json["actors"] != null
           ? List<String>.from(json["actors"])
-          : null,    );
+          : null,
+    );
   }
 
   // ───────────────────────────────────────────────────────────
@@ -72,11 +88,6 @@ class MovieModel extends MovieEntity {
       "release_date": releaseDate,
       "original_language": originalLanguage,
       "genre_ids": genreIds,
-      "genres": genres,
-      "runtime": runtime,
-      "isFavorite": isFavorite,
-      "isInWatchlist": isInWatchlist,
-      "actors": actors
     };
   }
 }
