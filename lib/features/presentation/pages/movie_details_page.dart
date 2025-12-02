@@ -249,8 +249,8 @@ class _MovieDetailsPageState extends State<MovieDetailsPage> {
                           IconButton(
                             icon: Icon(
                               isInWatchlist
-                                  ? Icons.bookmark
-                                  : Icons.bookmark_border,
+                                  ? Icons.visibility
+                                  : Icons.visibility_outlined,
                               color: Colors.white,
                               size: 28,
                             ),
