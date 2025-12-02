@@ -13,6 +13,7 @@ class WatchlistPage extends StatefulWidget {
 class _WatchlistPageState extends State<WatchlistPage> {
   final LocalStorage _storage = LocalStorage();
   late Future<List<Map<String, dynamic>>> _moviesFuture;
+  int _refreshKey = 0;
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class _WatchlistPageState extends State<WatchlistPage> {
   void _refreshMovies() {
     if (mounted) {
       setState(() {
+        _refreshKey++;
         _loadMovies();
       });
     }
@@ -64,6 +66,7 @@ class _WatchlistPageState extends State<WatchlistPage> {
 
           return MovieList(
             movies: movies,
+            refreshKey: _refreshKey,
             onMovieDetailsClosed: _refreshMovies,
           );
         },

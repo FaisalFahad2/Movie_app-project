@@ -30,4 +30,16 @@ class MovieApi {
     final response = await api.get("${AppConstants.movieDetails}/$movieId");
     return MovieModel.fromJson(response);
   }
+
+  // يحدث الفيلم بالتفاصيل الكاملة (genres و runtime)
+  Future<void> enrichMovieWithDetails(MovieModel movie) async {
+    try {
+      final details = await getMovieDetails(movie.id);
+      movie.genres = details.genres;
+      movie.runtime = details.runtime;
+    } catch (e) {
+      print('Failed to enrich movie ${movie.id}: $e');
+      // Don't throw - allow other movies to continue
+    }
+  }
 }

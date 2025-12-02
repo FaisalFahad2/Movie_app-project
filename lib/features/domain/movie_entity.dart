@@ -6,6 +6,11 @@ class MovieEntity {
   final String posterPath;
   final String backdropPath;
 
+  // Original TMDB data (immutable) - NEVER mutate these
+  final double originalVoteAverage;
+  final int originalVoteCount;
+
+  // Display values (can be used for UI, but NOT persisted)
   double voteAverage;
   int voteCount;
   final double popularity;
@@ -14,9 +19,9 @@ class MovieEntity {
   final String originalLanguage;
 
   final List<int> genreIds;        // From API
-  final List<String>? genres;      // Optional: full names
+  List<String>? genres;            // Optional: full names (mutable for enrichment)
 
-  final int? runtime;              // For details screen
+  int? runtime;                    // For details screen (mutable for enrichment)
 
   final bool isFavorite;           // Local flags
   final bool isInWatchlist;
@@ -29,8 +34,8 @@ class MovieEntity {
     required this.overview,
     required this.posterPath,
     required this.backdropPath,
-    required this.voteAverage,
-    required this.voteCount,
+    required double voteAverage,
+    required int voteCount,
     required this.popularity,
     required this.releaseDate,
     required this.originalLanguage,
@@ -39,15 +44,13 @@ class MovieEntity {
     this.runtime,
     this.isFavorite = false,
     this.isInWatchlist = false,
+    this.actors,
+  }) : originalVoteAverage = voteAverage,
+       originalVoteCount = voteCount,
+       this.voteAverage = voteAverage,
+       this.voteCount = voteCount;
 
-    this.actors
-  });
-
-  // Update rating with user's rating
-  void updateWithUserRating(double userRating) {
-    double totalRating = voteAverage * voteCount;
-    double newAverage = (totalRating + userRating) / (voteCount + 1);
-    voteAverage = double.parse(newAverage.toStringAsFixed(1));
-    voteCount = voteCount + 1;
-  }
+  // REMOVED: updateWithUserRating() method
+  // This method caused double-counting by mutating the movie object
+  // Rating calculation is now handled by LocalStorage.getAdjustedRating()
 }

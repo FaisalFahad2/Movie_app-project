@@ -13,6 +13,7 @@ class FavoritesPage extends StatefulWidget {
 class _FavoritesPageState extends State<FavoritesPage> {
   final LocalStorage _storage = LocalStorage();
   late Future<List<Map<String, dynamic>>> _moviesFuture;
+  int _refreshKey = 0;
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
   void _refreshMovies() {
     if (mounted) {
       setState(() {
+        _refreshKey++;
         _loadMovies();
       });
     }
@@ -64,6 +66,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
           return MovieList(
             movies: movies,
+            refreshKey: _refreshKey,
             onMovieDetailsClosed: _refreshMovies,
           );
         },

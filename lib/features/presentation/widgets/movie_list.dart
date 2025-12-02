@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import '../../domain/movie_entity.dart';
+import '../../data/movie_model.dart';
 import '../pages/movie_details_page.dart';
 import 'movie_card.dart';
 
 class MovieList extends StatelessWidget {
-  final List<MovieEntity> movies;
+  final List<MovieModel> movies;
+  final int refreshKey;
   final VoidCallback? onMovieDetailsClosed;
 
   const MovieList({
     Key? key,
     required this.movies,
+    required this.refreshKey,
     this.onMovieDetailsClosed,
   }) : super(key: key);
 
@@ -30,12 +32,13 @@ class MovieList extends StatelessWidget {
       itemBuilder: (context, index) {
         final movie = movies[index];
         return MovieCard(
+          key: ValueKey('${movie.id}_$refreshKey'),
           movie: movie,
           onTap: () async {
             await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => MovieDetailsPage(movieId: movie.id),
+                builder: (context) => MovieDetailsPage(movie: movie),
               ),
             );
             // Call callback to refresh parent

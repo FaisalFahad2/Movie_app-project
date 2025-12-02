@@ -24,6 +24,16 @@ class _UserRatingWidgetState extends State<UserRatingWidget> {
   }
 
   @override
+  void didUpdateWidget(UserRatingWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentUserRating != widget.currentUserRating) {
+      setState(() {
+        _selectedRating = widget.currentUserRating ?? 5.0;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),

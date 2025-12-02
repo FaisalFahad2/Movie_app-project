@@ -159,4 +159,20 @@ class LocalStorage {
       'count': originalCount + 1,
     };
   }
+
+  // ───────────────────────────────────────────────
+  // MIGRATE CORRUPTED DATA
+  // Clears watchlist and favorites to force re-fetch with clean data
+  // User ratings are preserved - only movie data is cleared
+  // ───────────────────────────────────────────────
+  Future<void> clearCorruptedMovieData() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Clear watchlist and favorites (will need to be re-added by user)
+    await prefs.remove(watchlistKey);
+    await prefs.remove(favoritesKey);
+
+    // Keep user ratings - they are still valid
+    // Only the movie data was corrupted, not the ratings themselves
+  }
 }

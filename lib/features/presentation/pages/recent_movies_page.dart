@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../core/api_client.dart';
-import '../../../core/local_storage.dart';
 import '../../data/movie_api.dart';
 import '../../data/movie_model.dart';
 import '../utils/movie_search.dart';
@@ -20,6 +19,9 @@ class _RecentMoviesPageState extends State<RecentMoviesPage> {
   List<MovieModel> allMovies = [];
   List<MovieModel> filteredMovies = [];
 
+  // ───────── Refresh Key for MovieCard rebuild ─────────
+  int _refreshKey = 0;
+
   // ───────── Save Last Filters ─────────
   String _currentSearch = "";
   int? _currentGenre;
@@ -35,59 +37,54 @@ class _RecentMoviesPageState extends State<RecentMoviesPage> {
       allMovies = movies;
       filteredMovies = movies;
 
-      // Apply user ratings to movies
-      await _applyUserRatings(movies);
+      // NO LONGER apply user ratings here - let UI calculate on display
 
-      _loadActorsInBackground(movieApi, movies);
+      // Enrich with details and actors in background
+      _enrichMoviesInBackground(movieApi, movies);
 
       return movies;
     });
   }
 
-  // ─────────────────────────────────────────────
-  // Apply user ratings to movies
-  // ─────────────────────────────────────────────
-  Future<void> _applyUserRatings(List<MovieModel> movies) async {
-    final storage = LocalStorage();
-    for (final movie in movies) {
-      final userRating = await storage.getUserRating(movie.id);
-      if (userRating != null) {
-        movie.updateWithUserRating(userRating);
-      }
-    }
-  }
+  // REMOVED: _applyUserRatings() method
+  // This method caused double-counting by mutating movies
+  // Rating calculation is now handled in MovieCard UI
 
   // ─────────────────────────────────────────────
-  // Refresh ratings when returning from details
-  // We need to reload from API to get fresh data
+  // Refresh UI when returning from details
+  // Increment refresh key to force MovieCard rebuild
   // ─────────────────────────────────────────────
   Future<void> _refreshRatings() async {
-    final movieApi = MovieApi(ApiClient());
-
-    try {
-      final freshMovies = await movieApi.getRecentMovies();
-      allMovies = freshMovies;
-
-      // Apply user ratings to fresh data
-      await _applyUserRatings(allMovies);
-
-      // Re-apply current filters
-      _applyFilters();
-    } catch (e) {
-      // If refresh fails, just continue with current data
-      if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {
+        _refreshKey++;
+      });
     }
   }
 
   // ─────────────────────────────────────────────
-  // Load actors in background (no UI freeze)
+  // Enrich movies with full details and actors in background
   // ─────────────────────────────────────────────
-  Future<void> _loadActorsInBackground(MovieApi api, List<MovieModel> movies) async {
+  Future<void> _enrichMoviesInBackground(
+    MovieApi api,
+    List<MovieModel> movies,
+  ) async {
+    // Phase 1: Load genres & runtime for all movies
     for (final movie in movies) {
-      final actors = await api.getMovieActors(movie.id);
-      movie.actors = actors;
+      await api.enrichMovieWithDetails(movie);
+      if (mounted) setState(() {}); // Progressive UI update
     }
-    if (mounted) setState(() {});
+
+    // Phase 2: Load actors (lower priority)
+    for (final movie in movies) {
+      try {
+        final actors = await api.getMovieActors(movie.id);
+        movie.actors = actors;
+        if (mounted) setState(() {});
+      } catch (e) {
+        print('Failed to load actors for ${movie.id}: $e');
+      }
+    }
   }
 
   // ─────────────────────────────────────────────
@@ -175,6 +172,7 @@ class _RecentMoviesPageState extends State<RecentMoviesPage> {
               Expanded(
                 child: MovieList(
                   movies: filteredMovies,
+                  refreshKey: _refreshKey,
                   onMovieDetailsClosed: _refreshRatings,
                 ),
               ),

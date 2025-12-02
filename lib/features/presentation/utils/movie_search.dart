@@ -25,6 +25,6 @@ class MovieSearch {
   }
 
   static List<MovieModel> filterByRating(List<MovieModel> movies, double minRating) {
-    return movies.where((m) => m.voteAverage >= minRating).toList();
+    return movies.where((m) => m.originalVoteAverage >= minRating).toList();
   }
 }

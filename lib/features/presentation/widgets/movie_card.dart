@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants.dart';
-import '../../domain/movie_entity.dart';
+import '../../../core/local_storage.dart';
+import '../../data/movie_model.dart';
 
-class MovieCard extends StatelessWidget {
-  final MovieEntity movie;
+class MovieCard extends StatefulWidget {
+  final MovieModel movie;
   final VoidCallback? onTap;
 
   const MovieCard({
@@ -13,9 +14,38 @@ class MovieCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<MovieCard> createState() => _MovieCardState();
+}
+
+class _MovieCardState extends State<MovieCard> {
+  double? _displayAverage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRating();
+  }
+
+  Future<void> _loadRating() async {
+    final storage = LocalStorage();
+    final adjusted = await storage.getAdjustedRating(
+      widget.movie.id,
+      widget.movie.originalVoteAverage,
+      widget.movie.originalVoteCount,
+    );
+
+    if (mounted) {
+      setState(() {
+        _displayAverage = adjusted['average'];
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final displayAverage = _displayAverage ?? widget.movie.originalVoteAverage;
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
         margin: const EdgeInsets.symmetric(vertical: 8),
@@ -29,7 +59,7 @@ class MovieCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: Image.network(
-                "${AppConstants.imageBaseUrl}${movie.posterPath}",
+                "${AppConstants.imageBaseUrl}${widget.movie.posterPath}",
                 width: 75,
                 height: 110,
                 fit: BoxFit.cover,
@@ -45,7 +75,7 @@ class MovieCard extends StatelessWidget {
                 children: [
                   // Title
                   Text(
-                    movie.title,
+                    widget.movie.title,
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -57,8 +87,8 @@ class MovieCard extends StatelessWidget {
 
                   // Release Year
                   Text(
-                    movie.releaseDate.isNotEmpty
-                        ? movie.releaseDate.substring(0, 4)
+                    widget.movie.releaseDate.isNotEmpty
+                        ? widget.movie.releaseDate.substring(0, 4)
                         : "Unknown",
                     style: const TextStyle(
                       color: Colors.grey,
@@ -68,13 +98,13 @@ class MovieCard extends StatelessWidget {
 
                   const SizedBox(height: 6),
 
-                  // Star + Rating
+                  // Star + Rating (calculated from original values)
                   Row(
                     children: [
                       const Icon(Icons.star, color: Colors.amber, size: 18),
                       const SizedBox(width: 4),
                       Text(
-                        movie.voteAverage.toString(),
+                        displayAverage.toStringAsFixed(1),
                         style: const TextStyle(
                           color: Colors.amber,
                           fontSize: 14,
@@ -84,27 +114,6 @@ class MovieCard extends StatelessWidget {
                     ],
                   ),
 
-                  const SizedBox(height: 6),
-
-                  // Genres
-                  if (movie.genres != null)
-                    Text(
-                      movie.genres!.join(", "),
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-
-                  // Runtime
-                  if (movie.runtime != null)
-                    Text(
-                      "${(movie.runtime! ~/ 60)}h ${(movie.runtime! % 60)}m",
-                      style: const TextStyle(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
                 ],
               ),
             ),
