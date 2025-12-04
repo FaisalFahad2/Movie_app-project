@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'recent_movies_page.dart';
 import 'watchlist_page.dart';
 import 'favorites_page.dart';
+import 'top_rated_page.dart';
+
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({Key? key}) : super(key: key);
@@ -16,7 +18,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 
   final List<Widget> _screens = [
     const RecentMoviesPage(),
-    const Center(child: Text("Top Rated Page", style: TextStyle(color: Colors.white))),
+    const TopRatedPage(),
     const WatchlistPage(),
     const FavoritesPage(),
   ];

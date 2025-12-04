@@ -15,6 +15,13 @@ class MovieApi {
     return results.map((json) => MovieModel.fromJson(json)).toList();
   }
 
+  Future<List<MovieModel>> getTopRatedMovies() async {
+    final response = await api.get(AppConstants.topRatedMovies);
+    final List<dynamic> results = response["results"];
+
+    return results.map((json) => MovieModel.fromJson(json)).toList();
+  }
+
   // يجلب الممثلين لفيلم واحد
   Future<List<String>> getMovieActors(int movieId) async {
     final response = await api.get("/movie/$movieId/credits");
