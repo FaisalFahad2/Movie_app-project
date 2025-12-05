@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/local_storage.dart';
 import '../../data/movie_model.dart';
+import '../utils/movie_search.dart';
 import '../widgets/movie_list.dart';
+import '../widgets/search_filter_bar.dart';
 
 class WatchlistPage extends StatefulWidget {
   const WatchlistPage({super.key});
@@ -14,6 +16,9 @@ class _WatchlistPageState extends State<WatchlistPage> {
   final LocalStorage _storage = LocalStorage();
   late Future<List<Map<String, dynamic>>> _moviesFuture;
   int _refreshKey = 0;
+  String _searchQuery = "";
+  int? _currentGenre;
+  double _currentRating = 0;
 
   @override
   void initState() {
@@ -32,6 +37,15 @@ class _WatchlistPageState extends State<WatchlistPage> {
         _loadMovies();
       });
     }
+  }
+
+  List<MovieModel> _applyFilters(List<MovieModel> movies) {
+    var result = movies;
+    if (_currentGenre != null) {
+      result = MovieSearch.filterByGenre(result, _currentGenre);
+    }
+    result = MovieSearch.filterByRating(result, _currentRating);
+    return MovieSearch.search(result, _searchQuery);
   }
 
   @override
@@ -60,14 +74,25 @@ class _WatchlistPageState extends State<WatchlistPage> {
             );
           }
 
-          final movies = moviesData
-              .map((data) => MovieModel.fromJson(data))
-              .toList();
+          final movies =
+              moviesData.map((data) => MovieModel.fromJson(data)).toList();
+          final filteredMovies = _applyFilters(movies);
 
-          return MovieList(
-            movies: movies,
-            refreshKey: _refreshKey,
-            onMovieDetailsClosed: _refreshMovies,
+          return Column(
+            children: [
+              SearchAndFilterBar(
+                onSearchChanged: (v) => setState(() => _searchQuery = v),
+                onGenreSelected: (g) => setState(() => _currentGenre = g),
+                onRatingChanged: (r) => setState(() => _currentRating = r),
+              ),
+              Expanded(
+                child: MovieList(
+                  movies: filteredMovies,
+                  refreshKey: _refreshKey,
+                  onMovieDetailsClosed: _refreshMovies,
+                ),
+              ),
+            ],
           );
         },
       ),
